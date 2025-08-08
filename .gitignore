@@ -1,0 +1,15 @@
+# Binaries
+octave-mcp
+cmd/octave/octave-mcp
+cmd/client/client
+
+# Log files
+*.log
+*.json
+*.txt
+
+# Test artifacts
+test/integration/responses.json
+test/integration/init_response.json
+test/integration/http_server.log
+test/integration/server.log
