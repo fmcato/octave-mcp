@@ -16,6 +16,11 @@ type RunOctaveParams struct {
 	Script string `json:"script"`
 }
 
+type GeneratePlotParams struct {
+	Script string `json:"script"`
+	Format string `json:"format"` // "png" or "svg"
+}
+
 type Server struct {
 	mcpServer *mcp.Server
 	runner    *octave.Runner
@@ -34,8 +39,13 @@ func New() *Server {
 func (s *Server) RegisterHandlers() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
 		Name:        "run_octave",
-		Description: "Executes GNU Octave scripts non-interactively. Ideal for off-loading calculations from the LLM.",
+		Description: "Executes a GNU Octave script non-interactively. Ideal for off-loading calculations from the LLM.",
 	}, s.runOctaveHandler)
+
+	mcp.AddTool(s.mcpServer, &mcp.Tool{
+		Name:        "generate_plot",
+		Description: "Generate a plot from a GNU Octave script. Returns image data in specified format (png/svg). Use the plot() command and any other one for labels, legend, etc. Do not try to set graphics toolkit or other format options.",
+	}, s.generatePlotHandler)
 }
 
 func (s *Server) RunHTTP(addr string) error {
@@ -75,6 +85,35 @@ func (s *Server) runOctaveHandler(ctx context.Context, ss *mcp.ServerSession, pa
 	return &mcp.CallToolResultFor[any]{
 		IsError: false,
 		Content: []mcp.Content{&mcp.TextContent{Text: result}},
+	}, nil
+}
+
+func (s *Server) generatePlotHandler(ctx context.Context, ss *mcp.ServerSession, params *mcp.CallToolParamsFor[GeneratePlotParams]) (*mcp.CallToolResultFor[any], error) {
+	if params.Arguments.Script == "" {
+		return nil, fmt.Errorf("script parameter is required")
+	}
+
+	imgData, err := s.runner.GeneratePlot(ctx, params.Arguments.Script, params.Arguments.Format)
+	if err != nil {
+		return &mcp.CallToolResultFor[any]{
+			IsError: true,
+			Content: []mcp.Content{&mcp.TextContent{Text: err.Error()}},
+		}, nil
+	}
+
+	var mimeType string
+	switch params.Arguments.Format {
+	case "svg":
+		mimeType = "image/svg+xml"
+	case "png":
+		mimeType = "image/png"
+	default:
+		mimeType = "application/octet-stream"
+	}
+
+	return &mcp.CallToolResultFor[any]{
+		IsError: false,
+		Content: []mcp.Content{&mcp.ImageContent{Data: imgData, MIMEType: mimeType}},
 	}, nil
 }
 

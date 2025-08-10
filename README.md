@@ -45,19 +45,42 @@ Start the stdio server:
 
 ### MCP Tool Usage
 
-The server provides a `run_octave` tool with the following schema:
+The server provides two tools:
+
+1. `run_octave` - Execute Octave scripts:
 ```json
 {
   "script": "string"
 }
 ```
 
-Example tool call:
+Example:
 ```json
 {
   "script": "disp('Hello from Octave');"
 }
 ```
+
+2. `generate_plot` - Generate plots from Octave scripts:
+```json
+{
+  "script": "string",
+  "format": "png|svg"
+}
+```
+
+Example:
+```json
+{
+  "script": "plot([1,2,3,4]);",
+  "format": "png"
+}
+```
+
+**Plot Generation Notes:**
+- Requires Octave's `qt` graphics toolkit
+- Output formats supported: PNG or SVG
+- Maximum output size: 1MB
 
 ## Configuration
 

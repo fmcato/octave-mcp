@@ -5,7 +5,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -47,4 +49,42 @@ func (r *Runner) ExecuteScript(ctx context.Context, script string) (string, erro
 	}
 
 	return result, nil
+}
+
+func (r *Runner) GeneratePlot(ctx context.Context, script string, format string) ([]byte, error) {
+	// Validate format
+	format = strings.ToLower(format)
+	if format != "png" && format != "svg" {
+		return nil, fmt.Errorf("unsupported format: %s (must be png or svg)", format)
+	}
+
+	// Create temp dir
+	tempDir, err := os.MkdirTemp("", "octave-plot-*")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Setup plot command
+	plotFile := filepath.Join(tempDir, "plot."+format)
+	wrappedScript := fmt.Sprintf(`
+graphics_toolkit("qt");
+set(0, "defaultfigurevisible", "off");
+%s
+print("%s");
+`, script, plotFile)
+
+	// Execute
+	_, err = r.ExecuteScript(ctx, wrappedScript)
+	if err != nil {
+		return nil, fmt.Errorf("plot generation failed: %w", err)
+	}
+
+	// Read plot file
+	imgData, err := os.ReadFile(plotFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read plot file: %w", err)
+	}
+
+	return imgData, nil
 }
