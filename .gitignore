@@ -1,15 +1,33 @@
 # Binaries
-octave-mcp
-cmd/octave/octave-mcp
-cmd/client/client
+octave-server
 
 # Log files
 *.log
 *.json
 *.txt
 
-# Test artifacts
-test/integration/responses.json
-test/integration/init_response.json
-test/integration/http_server.log
-test/integration/server.log
+# Golang
+bin/
+pkg/
+*.exe
+*.test
+*.prof
+vendor/
+go.work
+go.work.sum
+
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db

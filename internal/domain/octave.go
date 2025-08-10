@@ -1,4 +1,4 @@
-package octave
+package domain
 
 import (
 	"bytes"

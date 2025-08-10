@@ -2,6 +2,25 @@
 
 A Model Context Protocol (MCP) server for executing Octave scripts non-interactively.
 
+## Project Structure
+
+```
+octave-mcp/
+├── cmd/
+│   └── octave-server/        # Application entry point
+│       └── main.go
+├── internal/
+│   ├── domain/               # Core business logic
+│   │   ├── octave.go
+│   │   └── octave_test.go
+│   └── server/               # HTTP/stdio server implementation
+│       └── server.go
+├── go.mod
+├── go.sum
+├── README.md
+└── .gitignore
+```
+
 ## Features
 
 - Execute Octave scripts via MCP protocol
@@ -24,7 +43,7 @@ A Model Context Protocol (MCP) server for executing Octave scripts non-interacti
 
 2. Build the server:
    ```bash
-   go build ./cmd/main.go
+   go build ./cmd/octave-server
    ```
 
 ## Usage
@@ -33,14 +52,14 @@ A Model Context Protocol (MCP) server for executing Octave scripts non-interacti
 
 Start the HTTP server:
 ```bash
-./main -http localhost:8080
+./octave-server -http localhost:8080
 ```
 
 ### Stdio Mode
 
 Start the stdio server:
 ```bash
-./main
+./octave-server
 ```
 
 ### MCP Tool Usage

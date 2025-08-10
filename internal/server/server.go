@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/fmcato/octave-mcp/octave"
+	"github.com/fmcato/octave-mcp/internal/domain"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -23,12 +23,12 @@ type GeneratePlotParams struct {
 
 type Server struct {
 	mcpServer *mcp.Server
-	runner    *octave.Runner
+	runner    *domain.Runner
 }
 
 func New() *Server {
 	return &Server{
-		runner: octave.NewRunner(),
+		runner: domain.NewRunner(),
 		mcpServer: mcp.NewServer(&mcp.Implementation{
 			Name:    "octave-mcp",
 			Version: "1.0.0",

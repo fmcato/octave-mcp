@@ -1,4 +1,4 @@
-package octave_test
+package domain_test
 
 import (
 	"context"
@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fmcato/octave-mcp/octave"
+	"github.com/fmcato/octave-mcp/internal/domain"
 )
 
 func TestGeneratePlot(t *testing.T) {
-	runner := octave.NewRunner()
+	runner := domain.NewRunner()
 	ctx := context.Background()
 
 	t.Run("PNG output", func(t *testing.T) {
@@ -79,7 +79,7 @@ grid on;`
 	})
 }
 
-func testPlotGeneration(t *testing.T, runner *octave.Runner, ctx context.Context, format string) {
+func testPlotGeneration(t *testing.T, runner *domain.Runner, ctx context.Context, format string) {
 	imgData, err := runner.GeneratePlot(ctx, "plot([1,2,3,4]);", format)
 	if err != nil {
 		t.Fatal(err)
