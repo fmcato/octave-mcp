@@ -1,0 +1,55 @@
+name: Build and Package
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+          - os: linux
+            arch: arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Set version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=snapshot" >> $GITHUB_ENV
+          fi
+
+      - name: Build
+        run: go build -o octave-server ./cmd/octave-server
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+
+      - name: Package
+        run: |
+          RELEASE_NAME="octave-server_${VERSION}_${{ matrix.os }}_${{ matrix.arch }}"
+          mkdir -p $RELEASE_NAME
+          cp octave-server $RELEASE_NAME/
+          cp LICENSE $RELEASE_NAME/
+          cp README.md $RELEASE_NAME/
+          tar czf $RELEASE_NAME.tar.gz $RELEASE_NAME
+          rm -rf $RELEASE_NAME
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-binaries-${{ matrix.arch }}
+          path: |
+            *.tar.gz
