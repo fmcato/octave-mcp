@@ -3,22 +3,24 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/fmcato/octave-mcp/internal/domain"
+	"github.com/google/uuid"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 type RunOctaveParams struct {
-	Script string `json:"script"`
+	Script string `json:"script" description:"A GNU Octave script that should produce a result."`
 }
 
 type GeneratePlotParams struct {
-	Script string `json:"script"`
-	Format string `json:"format"` // "png" or "svg"
+	Script string `json:"script" description:"A GNU Octave script that calls plot() to produce a graph"`
+	Format string `json:"format" description:"Image output format. Supported: svg or png"` // "png" or "svg"
 }
 
 type Server struct {
@@ -57,13 +59,13 @@ func (s *Server) RunHTTP(addr string) error {
 		return s.mcpServer
 	}, &mcp.StreamableHTTPOptions{})
 
-	log.Printf("Starting HTTP server on %s", addr)
-	http.Handle("/mcp", securityMiddleware(handler))
+	slog.Info("Starting HTTP server", "addr", addr)
+	http.Handle("/mcp", loggingMiddleware(securityMiddleware(handler)))
 	return http.ListenAndServe(addr, nil)
 }
 
 func (s *Server) RunStdio() error {
-	log.Println("Starting stdio server")
+	slog.Info("Starting stdio server")
 	transport := mcp.NewLoggingTransport(mcp.NewStdioTransport(), os.Stderr)
 	return s.mcpServer.Run(context.Background(), transport)
 }
@@ -115,6 +117,54 @@ func (s *Server) generatePlotHandler(ctx context.Context, ss *mcp.ServerSession,
 		IsError: false,
 		Content: []mcp.Content{&mcp.ImageContent{Data: imgData, MIMEType: mimeType}},
 	}, nil
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rw *responseWriter) WriteHeader(statusCode int) {
+	rw.status = statusCode
+	rw.ResponseWriter.WriteHeader(statusCode)
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		requestID := uuid.New().String()
+
+		slog.Debug("request started",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"request_id", requestID)
+
+		rw := &responseWriter{ResponseWriter: w}
+		next.ServeHTTP(rw, r)
+
+		duration := time.Since(start)
+		status := rw.status
+		if status == 0 {
+			status = http.StatusOK
+		}
+
+		logAttrs := []any{
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", status,
+			"duration", duration,
+			"request_id", requestID,
+		}
+
+		switch {
+		case status >= 500:
+			slog.Error("internal error", logAttrs...)
+		case status >= 400:
+			slog.Warn("invalid request", logAttrs...)
+		default:
+			slog.Info("request completed", logAttrs...)
+		}
+	})
 }
 
 func securityMiddleware(next http.Handler) http.Handler {

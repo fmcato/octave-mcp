@@ -1,25 +1,9 @@
+
 # Octave MCP Server
 
 A Model Context Protocol (MCP) server for executing Octave scripts non-interactively.
 
-## Project Structure
-
-```
-octave-mcp/
-├── cmd/
-│   └── octave-server/        # Application entry point
-│       └── main.go
-├── internal/
-│   ├── domain/               # Core business logic
-│   │   ├── octave.go
-│   │   └── octave_test.go
-│   └── server/               # HTTP/stdio server implementation
-│       └── server.go
-├── go.mod
-├── go.sum
-├── README.md
-└── .gitignore
-```
+![Octave MCP logo](https://github.com/fmcato/octave-mcp/raw/main/assets/logo-200.png)
 
 ## Features
 
@@ -30,8 +14,8 @@ octave-mcp/
 
 ## Prerequisites
 
-- Go 1.20+ (for building/running)
-- Octave installed and available in PATH
+- Go 1.21+ (for building/running)
+- GNU Octave installed and available in PATH (tested version 8.4.0)
 
 ## Installation
 
