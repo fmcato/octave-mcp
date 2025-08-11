@@ -16,6 +16,9 @@ type Runner struct {
 	logger *slog.Logger
 }
 
+// Ensure Runner implements RunnerInterface
+var _ RunnerInterface = (*Runner)(nil)
+
 func NewRunner() *Runner {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)

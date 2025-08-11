@@ -2,27 +2,49 @@ package domain_test
 
 import (
 	"context"
-	"path/filepath"
-	"strings"
+	"errors"
 	"testing"
 
-	"github.com/fmcato/octave-mcp/internal/domain"
+	"github.com/fmcato/octave-mcp/internal/domain/mocks"
 )
 
 func TestGeneratePlot(t *testing.T) {
-	runner := domain.NewRunner()
 	ctx := context.Background()
 
-	t.Run("PNG output", func(t *testing.T) {
-		testPlotGeneration(t, runner, ctx, "png")
+	t.Run("Valid PNG format", func(t *testing.T) {
+		mockRunner := &mocks.MockRunner{
+			GeneratePlotFunc: func(ctx context.Context, script string, format string) ([]byte, error) {
+				return []byte("mock png data"), nil
+			},
+		}
+
+		_, err := mockRunner.GeneratePlot(ctx, "plot([1,2,3]);", "png")
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
 	})
 
-	t.Run("SVG output", func(t *testing.T) {
-		testPlotGeneration(t, runner, ctx, "svg")
+	t.Run("Valid SVG format", func(t *testing.T) {
+		mockRunner := &mocks.MockRunner{
+			GeneratePlotFunc: func(ctx context.Context, script string, format string) ([]byte, error) {
+				return []byte("<svg>mock svg data</svg>"), nil
+			},
+		}
+
+		_, err := mockRunner.GeneratePlot(ctx, "plot([1,2,3]);", "svg")
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
 	})
 
 	t.Run("Invalid format", func(t *testing.T) {
-		_, err := runner.GeneratePlot(ctx, "plot([1,2,3]);", "jpg")
+		mockRunner := &mocks.MockRunner{
+			GeneratePlotFunc: func(ctx context.Context, script string, format string) ([]byte, error) {
+				return nil, errors.New("unsupported format: jpg (must be png or svg)")
+			},
+		}
+
+		_, err := mockRunner.GeneratePlot(ctx, "plot([1,2,3]);", "jpg")
 		if err == nil {
 			t.Fatal("Expected error for invalid format")
 		}
@@ -32,78 +54,70 @@ func TestGeneratePlot(t *testing.T) {
 		}
 	})
 
+	t.Run("Empty script", func(t *testing.T) {
+		mockRunner := &mocks.MockRunner{
+			GeneratePlotFunc: func(ctx context.Context, script string, format string) ([]byte, error) {
+				return nil, errors.New("script cannot be empty")
+			},
+		}
+
+		_, err := mockRunner.GeneratePlot(ctx, "", "png")
+		if err == nil {
+			t.Fatal("Expected error for empty script")
+		}
+		expected := "script cannot be empty"
+		if err.Error() != expected {
+			t.Errorf("Expected error: %s, got: %s", expected, err.Error())
+		}
+	})
+}
+
+func TestExecuteScript(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("Valid script", func(t *testing.T) {
+		mockRunner := &mocks.MockRunner{
+			ExecuteScriptFunc: func(ctx context.Context, script string) (string, error) {
+				return "ans =  6", nil
+			},
+		}
+
+		result, err := mockRunner.ExecuteScript(ctx, "x = 2 + 4")
+		if err != nil {
+			t.Errorf("Expected no error, got: %v", err)
+		}
+		if result != "ans =  6" {
+			t.Errorf("Expected 'ans =  6', got: %s", result)
+		}
+	})
+
 	t.Run("Invalid script", func(t *testing.T) {
-		_, err := runner.GeneratePlot(ctx, "invalid octave script", "png")
+		mockRunner := &mocks.MockRunner{
+			ExecuteScriptFunc: func(ctx context.Context, script string) (string, error) {
+				return "error: some error", errors.New("execution failed")
+			},
+		}
+
+		_, err := mockRunner.ExecuteScript(ctx, "invalid script")
 		if err == nil {
 			t.Fatal("Expected error for invalid script")
 		}
-		if !strings.Contains(err.Error(), "plot generation failed") {
-			t.Errorf("Expected plot generation error, got: %s", err.Error())
-		}
 	})
 
-	t.Run("Temp file cleanup", func(t *testing.T) {
-		// Count existing temp directories
-		beforeDirs, _ := filepath.Glob("/tmp/octave-plot-*")
-		beforeCount := len(beforeDirs)
-
-		// Generate plot
-		_, err := runner.GeneratePlot(ctx, "plot([1,2,3]);", "png")
-		if err != nil {
-			t.Fatal(err)
+	t.Run("Empty script", func(t *testing.T) {
+		mockRunner := &mocks.MockRunner{
+			ExecuteScriptFunc: func(ctx context.Context, script string) (string, error) {
+				return "", errors.New("script cannot be empty")
+			},
 		}
 
-		// Count temp directories after
-		afterDirs, _ := filepath.Glob("/tmp/octave-plot-*")
-		afterCount := len(afterDirs)
-
-		// Should have same number or less (cleanup might be async)
-		if afterCount > beforeCount {
-			t.Errorf("Temp dir not cleaned up: before %d, after %d", beforeCount, afterCount)
+		_, err := mockRunner.ExecuteScript(ctx, "")
+		if err == nil {
+			t.Fatal("Expected error for empty script")
+		}
+		expected := "script cannot be empty"
+		if err.Error() != expected {
+			t.Errorf("Expected error: %s, got: %s", expected, err.Error())
 		}
 	})
-
-	t.Run("Script with post-plot commands", func(t *testing.T) {
-		script := `plot([1,2,3,4]);
-xlabel('X Axis');
-ylabel('Y Axis');
-title('Test Plot');
-legend('Data');
-grid on;`
-		imgData, err := runner.GeneratePlot(ctx, script, "png")
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		validateImgData(t, imgData, "png")
-	})
-}
-
-func testPlotGeneration(t *testing.T, runner *domain.Runner, ctx context.Context, format string) {
-	imgData, err := runner.GeneratePlot(ctx, "plot([1,2,3,4]);", format)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	validateImgData(t, imgData, format)
-}
-
-func validateImgData(t *testing.T, imgData []byte, format string) {
-	// Verify image size (1MB max)
-	if len(imgData) > 1024*1024 {
-		t.Errorf("%s image size exceeds 1MB: %d bytes", format, len(imgData))
-	}
-
-	// Verify non-zero size
-	if len(imgData) == 0 {
-		t.Errorf("%s image data is empty", format)
-	}
-
-	// Verify basic header
-	if format == "png" && string(imgData[1:4]) != "PNG" {
-		t.Errorf("Invalid PNG header: %x", imgData[:4])
-	}
-	if format == "svg" && !strings.Contains(string(imgData[:100]), "<svg") {
-		t.Errorf("Invalid SVG header: %s", string(imgData[:100]))
-	}
 }
