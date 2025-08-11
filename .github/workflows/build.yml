@@ -23,6 +23,12 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
+      - name: Install Octave
+        run: sudo apt-get update && sudo apt-get install -y octave
+
+      - name: Run tests
+        run: go test ./...
+
       - name: Set version
         run: |
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref_type }}" = "tag" ]; then
