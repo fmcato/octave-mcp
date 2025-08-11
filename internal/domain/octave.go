@@ -46,7 +46,7 @@ func (r *Runner) ExecuteScript(ctx context.Context, script string) (string, erro
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "octave", "--eval", script)
+	cmd := exec.CommandContext(ctx, "octave", "--silent", "--no-window-system", "--eval", script)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -89,7 +89,7 @@ func (r *Runner) GeneratePlot(ctx context.Context, script string, format string)
 	// Setup plot command
 	plotFile := filepath.Join(tempDir, "plot."+format)
 	wrappedScript := fmt.Sprintf(`
-graphics_toolkit("qt");
+graphics_toolkit("gnuplot");
 set(0, "defaultfigurevisible", "off");
 %s
 print("%s");

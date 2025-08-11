@@ -81,7 +81,6 @@ Example:
 ```
 
 **Plot Generation Notes:**
-- Requires Octave's `qt` graphics toolkit
 - Output formats supported: PNG or SVG
 - Maximum output size: 1MB
 
