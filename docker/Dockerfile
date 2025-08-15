@@ -19,6 +19,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o octave-server ./cmd/octave-server
 # Runtime stage: Use the official gnuoctave/octave image
 FROM gnuoctave/octave:10.1.0
 
+LABEL org.opencontainers.image.description="Model-Context-Protocol (MCP) server for GNU Octave"
+
 # Set working directory
 WORKDIR /app
 
