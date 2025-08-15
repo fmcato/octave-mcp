@@ -1,0 +1,12 @@
+services:
+  octave-mcp:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - OCTAVE_SCRIPT_TIMEOUT=30
+      - OCTAVE_CONCURRENCY_LIMIT=5
+      - OCTAVE_SCRIPT_LENGTH_LIMIT=50000
+      - OCTAVE_MCP_ALLOW_NON_LOCALHOST=true

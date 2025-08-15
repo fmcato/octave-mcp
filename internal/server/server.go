@@ -57,8 +57,11 @@ func (s *Server) RegisterHandlers() {
 }
 
 func (s *Server) RunHTTP(addr string) error {
+	// Allow non-localhost binding if explicitly enabled
 	if !strings.Contains(addr, "localhost") && !strings.Contains(addr, "127.0.0.1") {
-		return fmt.Errorf("HTTP server must bind to localhost for security")
+		if strings.ToLower(os.Getenv("OCTAVE_MCP_ALLOW_NON_LOCALHOST")) != "true" {
+			return fmt.Errorf("HTTP server must bind to localhost for security. To allow non-localhost binding, set OCTAVE_MCP_ALLOW_NON_LOCALHOST=true")
+		}
 	}
 
 	handler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {

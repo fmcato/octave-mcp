@@ -84,6 +84,31 @@ Example:
 - Output formats supported: PNG or SVG
 
 
+## Running with Docker
+
+You can run the Octave MCP server using Docker for easier deployment and isolation.
+
+### Using Docker Compose (Recommended)
+
+Build and run the server:
+```bash
+docker-compose up --build
+```
+
+The server will be available at `http://localhost:8080`.
+
+### Using Docker Directly
+
+Build the image:
+```bash
+docker build -t octave-mcp -f docker/Dockerfile .
+```
+
+Run the container:
+```bash
+docker run -p 8080:8080 octave-mcp
+```
+
 ## Configuration
 
 The server accepts the following flags:
@@ -96,6 +121,7 @@ The following environment variables can be used to configure server behavior:
 - `OCTAVE_SCRIPT_TIMEOUT`: Script execution timeout in seconds (default: 10)
 - `OCTAVE_CONCURRENCY_LIMIT`: Maximum concurrent executions (default: 10)
 - `OCTAVE_SCRIPT_LENGTH_LIMIT`: Maximum script length in characters (default: 10000)
+- `OCTAVE_MCP_ALLOW_NON_LOCALHOST`: Set to `true` to allow non-localhost connections (default: `false`). Use with caution in production environments.
 
 ## Security
 
@@ -104,7 +130,7 @@ The following environment variables can be used to configure server behavior:
 - Uses temporary directories with restricted permissions
 
 When running in HTTP mode:
-- Only accepts connections from localhost
+- Only accepts connections from localhost (unless `OCTAVE_MCP_ALLOW_NON_LOCALHOST=true` is set)
 - Implements strict CORS and security headers
 - Validates request origins
 
