@@ -43,7 +43,7 @@ func NewRunner() *Runner {
 	}
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(versionCheckTimeout)*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "octave", "--version")
+	cmd := exec.CommandContext(ctx, "octave-cli", "--version")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
@@ -121,7 +121,7 @@ func (r *Runner) ExecuteScript(ctx context.Context, script string) (string, erro
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(scriptTimeout)*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "octave", "--silent", "--no-window-system", "--eval", sanitizedScript)
+	cmd := exec.CommandContext(ctx, "octave-cli", "--silent", "--no-window-system", "--eval", sanitizedScript)
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
