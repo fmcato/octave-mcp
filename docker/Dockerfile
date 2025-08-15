@@ -1,12 +1,5 @@
-# Use Go 1.24 as the base image
-FROM golang:1.24
-
-# Install Octave and dependencies
-RUN apt-get update && apt-get install -y \
-    gnuplot \
-    octave \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Build stage: Use golang:alpine for smaller footprint
+FROM golang:alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -20,8 +13,17 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the application
-RUN go build -o octave-server ./cmd/octave-server
+# Build the application as a static binary for Alpine compatibility
+RUN CGO_ENABLED=0 GOOS=linux go build -o octave-server ./cmd/octave-server
+
+# Runtime stage: Use the official gnuoctave/octave image
+FROM gnuoctave/octave:10.1.0
+
+# Set working directory
+WORKDIR /app
+
+# Copy the compiled binary from the builder stage
+COPY --from=builder /app/octave-server .
 
 # Expose port
 EXPOSE 8080

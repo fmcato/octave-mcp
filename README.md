@@ -1,4 +1,3 @@
-
 # Octave MCP Server
 
 A Model Context Protocol (MCP) server for executing Octave scripts non-interactively.
@@ -88,6 +87,11 @@ Example:
 
 You can run the Octave MCP server using Docker for easier deployment and isolation.
 
+The Docker image uses a multi-stage build process:
+- Build stage: Uses `golang:alpine` for compiling the binary
+- Runtime stage: Uses the official `gnuoctave/octave` image
+- This approach reduces the final image size and improves security
+
 ### Using Docker Compose (Recommended)
 
 Build and run the server:
@@ -108,6 +112,27 @@ Run the container:
 ```bash
 docker run -p 8080:8080 octave-mcp
 ```
+
+### Testing the Docker Image
+
+To verify the Docker image is working correctly:
+
+1. Start the container:
+   ```bash
+   docker-compose up -d
+   ```
+
+2. Use a tool like MCP Inspector to verify the server is accessible at http://localhost:8080/mcp
+
+3. Check the logs:
+   ```bash
+   docker-compose logs octave-mcp
+   ```
+
+4. Stop the container:
+   ```bash
+   docker-compose down
+   ```
 
 ## Configuration
 
