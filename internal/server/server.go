@@ -26,11 +26,14 @@ type GeneratePlotParams struct {
 type Server struct {
 	mcpServer *mcp.Server
 	runner    *domain.Runner
+	version   string
 }
 
 func New() *Server {
+	runner := domain.NewRunner()
 	return &Server{
-		runner: domain.NewRunner(),
+		runner:  runner,
+		version: runner.GetVersion(),
 		mcpServer: mcp.NewServer(&mcp.Implementation{
 			Name:    "octave-mcp",
 			Version: "1.0.0",
@@ -41,12 +44,15 @@ func New() *Server {
 func (s *Server) RegisterHandlers() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
 		Name:        "run_octave",
-		Description: "Executes a GNU Octave script non-interactively. Ideal for off-loading calculations from the LLM.",
+		Description: fmt.Sprintf("Executes a GNU Octave script and returns the standad output. For scientific computing and numerical calculations. Version %s.", s.version),
+		Annotations: &mcp.ToolAnnotations{
+			ReadOnlyHint: true,
+		},
 	}, s.runOctaveHandler)
 
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
 		Name:        "generate_plot",
-		Description: "Generate a plot from a GNU Octave script. Returns image data in specified format (png/svg). Use the plot() command and any other one for labels, legend, etc. Do not try to set graphics toolkit or other format options.",
+		Description: fmt.Sprintf("Generate a plot from a GNU Octave script. Returns image data in specified format (png/svg). Use the plot() command and any other one for labels, legend, etc. Do not try to set graphics toolkit or other format options. Version %s.", s.version),
 	}, s.generatePlotHandler)
 }
 

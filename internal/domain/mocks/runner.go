@@ -8,6 +8,7 @@ import (
 type MockRunner struct {
 	ExecuteScriptFunc func(ctx context.Context, script string) (string, error)
 	GeneratePlotFunc  func(ctx context.Context, script string, format string) ([]byte, error)
+	Version           string
 }
 
 // ExecuteScript calls the mock function if set, otherwise returns empty string and nil error
@@ -24,4 +25,9 @@ func (m *MockRunner) GeneratePlot(ctx context.Context, script string, format str
 		return m.GeneratePlotFunc(ctx, script, format)
 	}
 	return []byte{}, nil
+}
+
+// GetVersion returns the mock version
+func (m *MockRunner) GetVersion() string {
+	return m.Version
 }

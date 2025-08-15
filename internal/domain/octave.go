@@ -24,6 +24,7 @@ type Runner struct {
 	logger *slog.Logger
 	// semaphore to limit concurrent executions
 	semaphore chan struct{}
+	version   string
 }
 
 // Ensure Runner implements RunnerInterface
@@ -43,11 +44,22 @@ func NewRunner() *Runner {
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(versionCheckTimeout)*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "octave", "--version")
+	var out bytes.Buffer
+	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		slog.Error("Could not run octave command, make sure it's installed and available in the PATH")
+		slog.Error("Could not run octave command", "error", err)
 		os.Exit(1)
 	}
+
+	// Extract version
+	versionRe := regexp.MustCompile(`version (\d+\.\d+\.\d+)`)
+	matches := versionRe.FindStringSubmatch(out.String())
+	if len(matches) < 2 {
+		slog.Error("Could not parse octave version", "output", out.String())
+		os.Exit(1)
+	}
+	version := matches[1]
 
 	// Configure concurrency limit (default: 10)
 	concurrencyLimit := defaultConcurrencyLimit
@@ -63,6 +75,7 @@ func NewRunner() *Runner {
 		logger: slog.Default(),
 
 		semaphore: make(chan struct{}, concurrencyLimit),
+		version:   version,
 	}
 }
 
@@ -130,6 +143,11 @@ func (r *Runner) ExecuteScript(ctx context.Context, script string) (string, erro
 
 	r.logger.Debug("ExecuteScript completed successfully", "result_length", len(result))
 	return result, nil
+}
+
+// GetVersion returns the Octave version
+func (r *Runner) GetVersion() string {
+	return r.version
 }
 
 // filterOutput removes potentially sensitive information from the output
