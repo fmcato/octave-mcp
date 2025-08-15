@@ -50,12 +50,10 @@ jobs:
           cp octave-server $RELEASE_NAME/
           cp LICENSE $RELEASE_NAME/
           cp README.md $RELEASE_NAME/
-          tar czf $RELEASE_NAME.tar.gz $RELEASE_NAME
-          rm -rf $RELEASE_NAME
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-binaries-${{ matrix.arch }}
           path: |
-            *.tar.gz
+            octave-server_*/
