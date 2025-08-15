@@ -82,14 +82,26 @@ Example:
 
 **Plot Generation Notes:**
 - Output formats supported: PNG or SVG
-- Maximum output size: 1MB
+
 
 ## Configuration
 
 The server accepts the following flags:
 - `-http`: HTTP address to listen on (empty for stdio mode)
 
+## Environment Variables
+
+The following environment variables can be used to configure server behavior:
+
+- `OCTAVE_SCRIPT_TIMEOUT`: Script execution timeout in seconds (default: 10)
+- `OCTAVE_CONCURRENCY_LIMIT`: Maximum concurrent executions (default: 10)
+- `OCTAVE_SCRIPT_LENGTH_LIMIT`: Maximum script length in characters (default: 10000)
+
 ## Security
+
+- Scans scripts for dangerous patterns
+- Filters output to remove sensitive information
+- Uses temporary directories with restricted permissions
 
 When running in HTTP mode:
 - Only accepts connections from localhost
