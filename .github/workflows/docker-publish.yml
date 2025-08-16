@@ -70,6 +70,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: linux/amd64
+          # Disable provenance or it produces image for platform unknown/unknown
+          provenance: false
           context: .
           file: docker/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
