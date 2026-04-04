@@ -75,45 +75,54 @@ func (s *Server) RunHTTP(addr string) error {
 
 func (s *Server) RunStdio() error {
 	slog.Info("Starting stdio server")
-	transport := mcp.NewLoggingTransport(mcp.NewStdioTransport(), os.Stderr)
+	transport := &mcp.LoggingTransport{Transport: &mcp.StdioTransport{}, Writer: os.Stderr}
 	return s.mcpServer.Run(context.Background(), transport)
 }
 
-func (s *Server) runOctaveHandler(ctx context.Context, ss *mcp.ServerSession, params *mcp.CallToolParamsFor[RunOctaveParams]) (*mcp.CallToolResultFor[any], error) {
-	if params.Arguments.Script == "" {
-		return nil, fmt.Errorf("script parameter is required")
-	}
-
-	result, err := s.runner.ExecuteScript(ctx, params.Arguments.Script)
-
-	if err != nil {
-		return &mcp.CallToolResultFor[any]{
-			IsError: true,
-			Content: []mcp.Content{&mcp.TextContent{Text: result}},
-		}, nil
-	}
-
-	return &mcp.CallToolResultFor[any]{
-		IsError: false,
-		Content: []mcp.Content{&mcp.TextContent{Text: result}},
-	}, nil
+type runOctaveArgs struct {
+	Script string `json:"script"`
 }
 
-func (s *Server) generatePlotHandler(ctx context.Context, ss *mcp.ServerSession, params *mcp.CallToolParamsFor[GeneratePlotParams]) (*mcp.CallToolResultFor[any], error) {
-	if params.Arguments.Script == "" {
-		return nil, fmt.Errorf("script parameter is required")
+type generatePlotArgs struct {
+	Script string `json:"script"`
+	Format string `json:"format"`
+}
+
+func (s *Server) runOctaveHandler(ctx context.Context, req *mcp.CallToolRequest, args runOctaveArgs) (*mcp.CallToolResult, any, error) {
+	if args.Script == "" {
+		return nil, nil, fmt.Errorf("script parameter is required")
 	}
 
-	imgData, err := s.runner.GeneratePlot(ctx, params.Arguments.Script, params.Arguments.Format)
+	result, err := s.runner.ExecuteScript(ctx, args.Script)
+
 	if err != nil {
-		return &mcp.CallToolResultFor[any]{
+		return &mcp.CallToolResult{
+			IsError: true,
+			Content: []mcp.Content{&mcp.TextContent{Text: result}},
+		}, nil, nil
+	}
+
+	return &mcp.CallToolResult{
+		IsError: false,
+		Content: []mcp.Content{&mcp.TextContent{Text: result}},
+	}, nil, nil
+}
+
+func (s *Server) generatePlotHandler(ctx context.Context, req *mcp.CallToolRequest, args generatePlotArgs) (*mcp.CallToolResult, any, error) {
+	if args.Script == "" {
+		return nil, nil, fmt.Errorf("script parameter is required")
+	}
+
+	imgData, err := s.runner.GeneratePlot(ctx, args.Script, args.Format)
+	if err != nil {
+		return &mcp.CallToolResult{
 			IsError: true,
 			Content: []mcp.Content{&mcp.TextContent{Text: err.Error()}},
-		}, nil
+		}, nil, nil
 	}
 
 	var mimeType string
-	switch params.Arguments.Format {
+	switch args.Format {
 	case "svg":
 		mimeType = "image/svg+xml"
 	case "png":
@@ -122,10 +131,10 @@ func (s *Server) generatePlotHandler(ctx context.Context, ss *mcp.ServerSession,
 		mimeType = "application/octet-stream"
 	}
 
-	return &mcp.CallToolResultFor[any]{
+	return &mcp.CallToolResult{
 		IsError: false,
 		Content: []mcp.Content{&mcp.ImageContent{Data: imgData, MIMEType: mimeType}},
-	}, nil
+	}, nil, nil
 }
 
 type responseWriter struct {
